@@ -1,6 +1,6 @@
 {
-  "name": "easy-fivem",
-  "displayName": "Easy Fivem",
+  "name": "fivem-devbridge",
+  "displayName": "FiveM DevBridge",
   "description": "ensure resource when you save any change",
   "publisher": "DuckWichTrust",
   "version": "0.0.4",
@@ -14,7 +14,9 @@
   "activationEvents": [
     "onCommand:easy-fivem.connect",
     "onCommand:easy-fivem.disconnect",
-    "onCommand:easy-fivem.customConnect"
+    "onCommand:easy-fivem.customConnect",
+    "onCommand:easy-fivem.safeConnect",
+    "onCommand:easy-fivem.connectSaved"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -30,8 +32,28 @@
       {
         "command": "easy-fivem.customConnect",
         "title": "fivem custom-connect"
+      },
+      {
+        "command": "easy-fivem.safeConnect",
+        "title": "Safe Connect to FiveM"
+      },
+      {
+        "command": "easy-fivem.connectSaved",
+        "title": "Connect to Saved Connection"
+      },
+      {
+        "command": "easy-fivem.setCurrentResource",
+        "title": "Set as Current Resource"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "easy-fivem.setCurrentResource",
+          "when": "resourceIsFolder"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",
