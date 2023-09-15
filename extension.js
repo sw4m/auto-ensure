@@ -2,7 +2,8 @@ const vscode = require("vscode");
 const Rcon = require("rcon");
 const path = require("path");
 
-let conn;
+let rconConnection;
+let currentFolder;
 
 function showErrorMessage(message) {
   vscode.window.showErrorMessage(message);
@@ -13,18 +14,18 @@ function showInfoMessage(message) {
 }
 
 function disconnectFromServer() {
-  if (conn) {
-    conn.disconnect();
-    conn = null;
+  if (rconConnection) {
+    rconConnection.disconnect();
+    rconConnection = null;
     vscode.window.showWarningMessage("Disconnected");
   }
 }
 
 function handleRconEvents() {
-  conn
+  rconConnection
     .on("auth", () => {
       console.log("Authenticated");
-      conn.send("refresh");
+      rconConnection.send("refresh");
     })
     .on("response", (str) => {
       console.log(str);
@@ -46,13 +47,13 @@ function handleRconEvents() {
 
 function connectToServer(password, ip = "127.0.0.1", port = "30120") {
   disconnectFromServer();
-  conn = new Rcon(ip, port, password, { tcp: false, challenge: false });
+  rconConnection = new Rcon(ip, port, password, { tcp: false, challenge: false });
   handleRconEvents();
-  conn.connect();
+  rconConnection.connect();
 }
 
 function safeConnect(password, ip, port) {
-  if (conn) {
+  if (rconConnection) {
     vscode.window.showWarningMessage("Already connected. Disconnect first.");
     return;
   }
@@ -75,8 +76,8 @@ function setCurrentResource(folder) {
     return;
   }
   const folderName = path.basename(folder.fsPath);
-  if (conn) {
-    conn.send(`ensure ${folderName}`);
+  if (rconConnection) {
+    currentFolder = folder;
     showInfoMessage(`Set ${folderName} as the current resource.`);
   } else {
     showErrorMessage("Please connect to a server first.");
@@ -101,10 +102,16 @@ function activate(context) {
 
   // Event: Save Text Document
   vscode.workspace.onDidSaveTextDocument((document) => {
-    if (document.uri.scheme === "file" && conn) {
-      vscode.workspace.workspaceFolders.forEach((folder) => {
-        conn.send(`ensure ${folder.name}`);
-      });
+    if (document.uri.scheme === "file" && rconConnection) {
+      if (currentFolder) {
+        rconConnection.send(`refresh ${currentFolder.name}`);
+        rconConnection.send(`ensure ${currentFolder.name}`);
+      } else {
+        vscode.workspace.workspaceFolders.forEach((folder) => {
+          rconConnection.send(`refresh ${folder.name}`);
+          rconConnection.send(`ensure ${folder.name}`);
+        });
+      }
     }
   });
 
