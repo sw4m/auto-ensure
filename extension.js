@@ -4,13 +4,16 @@ const path = require("path");
 
 let rconConnection;
 let currentFolder;
+let vscodeWorkspaceState;
+let statusBarConnectionItem;
+
 
 function showErrorMessage(message) {
-  vscode.window.showErrorMessage(message);
+  vscode.window.showErrorMessage("[FiveM DevBridge] " + message);
 }
 
 function showInfoMessage(message) {
-  vscode.window.showInformationMessage(message);
+  vscode.window.showInformationMessage("[FiveM DevBridge] " + message);
 }
 
 function disconnectFromServer() {
@@ -18,6 +21,7 @@ function disconnectFromServer() {
     rconConnection.disconnect();
     rconConnection = null;
     vscode.window.showWarningMessage("Disconnected");
+    setConnectionStatus(false);
   }
 }
 
@@ -50,6 +54,7 @@ function connectToServer(password, ip = "127.0.0.1", port = "30120") {
   rconConnection = new Rcon(ip, port, password, { tcp: false, challenge: false });
   handleRconEvents();
   rconConnection.connect();
+  setConnectionStatus(true);
 }
 
 function safeConnect(password, ip, port) {
@@ -58,13 +63,15 @@ function safeConnect(password, ip, port) {
     return;
   }
   connectToServer(password, ip, port);
-  vscode.workspaceState.update("fivem-devbridge-connection", { password, ip, port });
+
+  vscodeWorkspaceState.update("fivem-devbridge-connection", { password, ip, port });
 }
 
 function connectToSaved() {
-  const savedConnection = vscode.workspaceState.get("fivem-devbridge-connection");
+  const savedConnection = vscodeWorkspaceState.get("fivem-devbridge-connection");
   if (!savedConnection) {
-    showErrorMessage("No saved connection found.");
+    showErrorMessage("No saved connection found. Please connect manually.");
+    vscode.commands.executeCommand('fivem-devbridge.connect');
     return;
   }
   safeConnect(savedConnection.password, savedConnection.ip, savedConnection.port);
@@ -84,20 +91,48 @@ function setCurrentResource(folder) {
   }
 }
 
+function toggleConnection() {
+  if (rconConnection) {
+    disconnectFromServer();
+
+  } else {
+    connectToSaved();
+
+  }
+}
+
+function setConnectionStatus(status) {
+  if (status) {
+    statusBarConnectionItem.text = '$(custom-icon) Disconnect';
+    statusBarConnectionItem.tooltip = 'Click to disconnect';
+  } else {
+    statusBarConnectionItem.text = '$(custom-icon) Connect';
+    statusBarConnectionItem.tooltip = 'Click to connect';
+  }
+}
+
+
 function activate(context) {
   // Check for saved connection at startup
   const workspaceState = context.workspaceState;
+  vscodeWorkspaceState = workspaceState;
+
+  statusBarConnectionItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  statusBarConnectionItem.text = '$(custom-icon) Connect';
+  statusBarConnectionItem.tooltip = 'Click to connect';
+  statusBarConnectionItem.command = 'fivem-devbridge.toggleConnection';
+  statusBarConnectionItem.show();
+
+  // Add the status bar item to the context subscriptions
+  context.subscriptions.push(statusBarConnectionItem);
 
   // Retrieve the saved connection from the workspaceState
   const savedConnection = workspaceState.get("fivem-devbridge-connection", null);
 
+
   if (savedConnection) {
-    vscode.window.showInformationMessage("Found saved FiveM connection. Use 'Connect to Saved Connection' to connect.", "Connect")
-      .then(selection => {
-        if (selection === "Connect") {
-          connectToSaved();
-        }
-      });
+    showInfoMessage(`Found saved connection: ${savedConnection.ip}:${savedConnection.port}`);
+    connectToSaved();
   }
 
   // Event: Save Text Document
@@ -131,6 +166,10 @@ function activate(context) {
   // Command: Custom Connect
   let customConnectCommand = vscode.commands.registerCommand('fivem-devbridge.customConnect', async function () {
     let connectionDetails = await vscode.window.showInputBox({ placeHolder: "ip:port", prompt: "Your server IP and port" });
+    if (!connectionDetails) {
+      showErrorMessage("No connection details provided!");
+      return;
+    }
     let [ip, port] = connectionDetails.split(":");
     const password = await vscode.window.showInputBox({ placeHolder: "password", prompt: "Your server RCON password" });
 
@@ -147,15 +186,18 @@ function activate(context) {
   // Command: Set Current Resource
   let setCurrentResourceCommand = vscode.commands.registerCommand('fivem-devbridge.setCurrentResource', setCurrentResource);
 
+  // Command: Toggle Connection
+  let toggleConnectionCommand = vscode.commands.registerCommand('fivem-devbridge.toggleConnection', toggleConnection);
+
   // Subscriptions
   context.subscriptions.push(
     connectCommand,
+    toggleConnectionCommand,
     disconnectCommand,
     customConnectCommand,
     connectSavedCommand,
     setCurrentResourceCommand
   );
-  console.log('FiveM DevBridge is now active!');
 }
 
 function deactivate() { }

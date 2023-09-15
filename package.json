@@ -13,6 +13,7 @@
     "Other"
   ],
   "activationEvents": [
+    "*",
     "onCommand:fivem-devbridge.connect",
     "onCommand:fivem-devbridge.disconnect",
     "onCommand:fivem-devbridge.customConnect",
@@ -21,7 +22,20 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "icons": {
+      "custom-icon": {
+        "description": "custom descr",
+        "default": {
+          "fontPath": "./iconItemBar.woff",
+          "fontCharacter": "\\41"
+        }
+      }
+    },
     "commands": [
+      {
+        "command": "fivem-devbridge.toggleConnection",
+        "title": "Toggle Connection"
+      },
       {
         "command": "fivem-devbridge.connect",
         "title": "fivem connect"
