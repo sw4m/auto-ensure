@@ -57,11 +57,11 @@ function safeConnect(password, ip, port) {
     return;
   }
   connectToServer(password, ip, port);
-  vscode.workspaceState.update("easy-fivem-connection", { password, ip, port });
+  vscode.workspaceState.update("fivem-devbridge-connection", { password, ip, port });
 }
 
 function connectToSaved() {
-  const savedConnection = vscode.workspaceState.get("easy-fivem-connection");
+  const savedConnection = vscode.workspaceState.get("fivem-devbridge-connection");
   if (!savedConnection) {
     showErrorMessage("No saved connection found.");
     return;
@@ -85,7 +85,7 @@ function setCurrentResource(folder) {
 
 function activate(context) {
   // Check for saved connection at startup
-  const savedConnection = vscode.workspaceState.get("easy-fivem-connection");
+  const savedConnection = vscode.workspaceState.get("fivem-devbridge-connection");
   if (savedConnection) {
     vscode.window.showInformationMessage("Found saved FiveM connection. Use 'Connect to Saved Connection' to connect.", "Connect")
       .then(selection => {
@@ -105,7 +105,7 @@ function activate(context) {
   });
 
   // Command: Connect
-  let connectCommand = vscode.commands.registerCommand('easy-fivem.connect', async function () {
+  let connectCommand = vscode.commands.registerCommand('fivem-devbridge.connect', async function () {
     const password = await vscode.window.showInputBox({ placeHolder: "password", prompt: "Your server RCON password" });
     if (password) {
       safeConnect(password);
@@ -115,10 +115,10 @@ function activate(context) {
   });
 
   // Command: Disconnect
-  let disconnectCommand = vscode.commands.registerCommand('easy-fivem.disconnect', disconnectFromServer);
+  let disconnectCommand = vscode.commands.registerCommand('fivem-devbridge.disconnect', disconnectFromServer);
 
   // Command: Custom Connect
-  let customConnectCommand = vscode.commands.registerCommand('easy-fivem.customConnect', async function () {
+  let customConnectCommand = vscode.commands.registerCommand('fivem-devbridge.customConnect', async function () {
     let connectionDetails = await vscode.window.showInputBox({ placeHolder: "ip:port", prompt: "Your server IP and port" });
     let [ip, port] = connectionDetails.split(":");
     const password = await vscode.window.showInputBox({ placeHolder: "password", prompt: "Your server RCON password" });
@@ -131,10 +131,10 @@ function activate(context) {
   });
 
   // Command: Connect to Saved
-  let connectSavedCommand = vscode.commands.registerCommand('easy-fivem.connectSaved', connectToSaved);
+  let connectSavedCommand = vscode.commands.registerCommand('fivem-devbridge.connectSaved', connectToSaved);
 
   // Command: Set Current Resource
-  let setCurrentResourceCommand = vscode.commands.registerCommand('easy-fivem.setCurrentResource', setCurrentResource);
+  let setCurrentResourceCommand = vscode.commands.registerCommand('fivem-devbridge.setCurrentResource', setCurrentResource);
 
   // Subscriptions
   context.subscriptions.push(
