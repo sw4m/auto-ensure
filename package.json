@@ -13,7 +13,7 @@
     "Other"
   ],
   "activationEvents": [
-    "*",
+    "onStartupFinished",
     "onCommand:fivem-devbridge.connect",
     "onCommand:fivem-devbridge.disconnect",
     "onCommand:fivem-devbridge.customConnect",
