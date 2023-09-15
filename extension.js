@@ -29,10 +29,12 @@ function handleRconEvents() {
   rconConnection
     .on("auth", () => {
       console.log("Authenticated");
-      rconConnection.send("refresh");
     })
     .on("response", (str) => {
-      console.log(str);
+      if (str.includes("Couldn't find resource")) {
+        showErrorMessage("Couldn't find resource");
+      }
+
       if (str === "rint Invalid password") {
         showErrorMessage("Invalid password");
       }
@@ -140,6 +142,7 @@ function activate(context) {
     if (document.uri.scheme === "file" && rconConnection) {
       if (currentFolder) {
         rconConnection.send(`refresh ${currentFolder.name}`);
+
         rconConnection.send(`ensure ${currentFolder.name}`);
       } else {
         vscode.workspace.workspaceFolders.forEach((folder) => {
