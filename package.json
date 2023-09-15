@@ -4,7 +4,7 @@
   "description": "ensure resource when you save any change",
   "publisher": "ZerX",
   "repository": "https://github.com/ZerXGIT/fivem-devbridge",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.71.0"
