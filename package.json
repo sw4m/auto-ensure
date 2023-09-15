@@ -4,7 +4,7 @@
   "description": "ensure resource when you save any change",
   "publisher": "ZerX",
   "repository": "https://github.com/ZerXGIT/fivem-devbridge",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.71.0"
@@ -13,44 +13,44 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:easy-fivem.connect",
-    "onCommand:easy-fivem.disconnect",
-    "onCommand:easy-fivem.customConnect",
-    "onCommand:easy-fivem.safeConnect",
-    "onCommand:easy-fivem.connectSaved"
+    "onCommand:fivem-devbridge.connect",
+    "onCommand:fivem-devbridge.disconnect",
+    "onCommand:fivem-devbridge.customConnect",
+    "onCommand:fivem-devbridge.safeConnect",
+    "onCommand:fivem-devbridge.connectSaved"
   ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "easy-fivem.connect",
+        "command": "fivem-devbridge.connect",
         "title": "fivem connect"
       },
       {
-        "command": "easy-fivem.disconnect",
+        "command": "fivem-devbridge.disconnect",
         "title": "fivem disconnect"
       },
       {
-        "command": "easy-fivem.customConnect",
+        "command": "fivem-devbridge.customConnect",
         "title": "fivem custom-connect"
       },
       {
-        "command": "easy-fivem.safeConnect",
+        "command": "fivem-devbridge.safeConnect",
         "title": "Safe Connect to FiveM"
       },
       {
-        "command": "easy-fivem.connectSaved",
+        "command": "fivem-devbridge.connectSaved",
         "title": "Connect to Saved Connection"
       },
       {
-        "command": "easy-fivem.setCurrentResource",
+        "command": "fivem-devbridge.setCurrentResource",
         "title": "Set as Current Resource"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "easy-fivem.setCurrentResource",
+          "command": "fivem-devbridge.setCurrentResource",
           "when": "resourceIsFolder"
         }
       ]
