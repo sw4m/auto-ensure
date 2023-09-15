@@ -1,30 +1,28 @@
-# easy-fivem README
+# FiveM DevBridge README
 
-extension link: https://marketplace.visualstudio.com/items?itemName=DuckWichTrust.easy-fivem&ssr=false#review-details
-
-ensure all opened folders resource (resource folder should be opened) with rcon
+[FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=DuckWichTrust.easy-fivem&ssr=false#review-details) is a powerful extension for Visual Studio Code that streamlines the development process for FiveM resources. With the ability to ensure all opened folders as resources via RCON, FiveM DevBridge offers a seamless bridge between your code and your FiveM server.
 
 ## Features
 
-auto connect and manual connect to fivem server (auto connect will connect to local host without asking for ip:port)
+- **Automatic & Manual Connection**: Connect to your FiveM server effortlessly. The auto-connect feature connects to a local host without requiring you to input the IP and port.
+- **Safe Connection**: Ensures you don't accidentally override an existing connection.
+- **Saved Connection**: Remembers your last connection details for quicker reconnections.
+- **Context Menu Integration**: Right-click on a folder in VS Code's explorer to set it as the current resource on the FiveM server.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## How to Use
 
-## How it works
+1. **Server Configuration**: 
+   - Add the line `rcon_password [YOUR_PASSWORD]` in your FiveM server's `server.cfg` file.
 
-put "rcon_password [password]" in your fivem server server.cfg file
+2. **Commands**:
+   - **Auto Connect**: Use the `fivem connect` command to automatically connect to a localhost server on port 30120. You'll be prompted for the RCON password.
+   - **Custom Connect**: Use the `fivem custom connect` command to connect to a custom IP and port. You'll be prompted for the IP, port, and RCON password.
+   - **Disconnect**: Use the `fivem disconnect` command to disconnect from any previously connected server.
 
-use "fivem connect" command to connect to the localhost server with 30120 port (it will ask for password)
+## Additional Resources
 
-use "fivem custom connect" command to connect tothe custom ip and port (it will ask for ip and port and password)
+- Learn more about RCON and its integration with FiveM:
+  - [FiveM RCON Documentation](https://docs.fivem.net/docs/server-manual/server-commands/#rcon_password-password)
+  - [What is RCON?](https://wiki.vg/RCON#:~:text=RCON%20is%20a%20protocol%20that,Source%20RCON%20protocol%20for%20Minecraft.)
 
-use "fivem disconnect" command to disconnect from any server that previously connected
-
----
-
-## For more information
-
-- [Fivem rcon documentation](https://docs.fivem.net/docs/server-manual/server-commands/#rcon_password-password)
-- [Whats rcon](https://wiki.vg/RCON#:~:text=RCON%20is%20a%20protocol%20that,Source%20RCON%20protocol%20for%20Minecraft.)
-
-**Enjoy!**
+**Enjoy your enhanced FiveM development experience with FiveM DevBridge!**
