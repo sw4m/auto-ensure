@@ -2,7 +2,8 @@
   "name": "fivem-devbridge",
   "displayName": "FiveM DevBridge",
   "description": "ensure resource when you save any change",
-  "publisher": "ZerXDE",
+  "publisher": "ZerX",
+  "repository": "https://github.com/ZerXGIT/fivem-devbridge",
   "version": "0.0.4",
   "icon": "icon.png",
   "engines": {
