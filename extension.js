@@ -86,7 +86,7 @@ function setCurrentResource(folder) {
   }
   const folderName = path.basename(folder.fsPath);
   if (rconConnection) {
-    currentFolder = folder;
+    currentFolder = folderName;
     showInfoMessage(`Set ${folderName} as the current resource.`);
   } else {
     showErrorMessage("Please connect to a server first.");
