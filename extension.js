@@ -85,7 +85,11 @@ function setCurrentResource(folder) {
 
 function activate(context) {
   // Check for saved connection at startup
-  const savedConnection = vscode.workspaceState.get("fivem-devbridge-connection");
+  const workspaceState = context.workspaceState;
+
+  // Retrieve the saved connection from the workspaceState
+  const savedConnection = workspaceState.get("fivem-devbridge-connection", null);
+
   if (savedConnection) {
     vscode.window.showInformationMessage("Found saved FiveM connection. Use 'Connect to Saved Connection' to connect.", "Connect")
       .then(selection => {
@@ -144,6 +148,7 @@ function activate(context) {
     connectSavedCommand,
     setCurrentResourceCommand
   );
+  console.log('FiveM DevBridge is now active!');
 }
 
 function deactivate() { }
