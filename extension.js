@@ -141,9 +141,9 @@ function activate(context) {
   vscode.workspace.onDidSaveTextDocument((document) => {
     if (document.uri.scheme === "file" && rconConnection) {
       if (currentFolder) {
-        rconConnection.send(`refresh ${currentFolder.name}`);
+        rconConnection.send(`refresh ${currentFolder}`);
 
-        rconConnection.send(`ensure ${currentFolder.name}`);
+        rconConnection.send(`ensure ${currentFolder}`);
       } else {
         vscode.workspace.workspaceFolders.forEach((folder) => {
           rconConnection.send(`refresh ${folder.name}`);
