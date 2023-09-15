@@ -155,7 +155,7 @@ function activate(context) {
 
   // Command: Connect
   let connectCommand = vscode.commands.registerCommand('fivem-devbridge.connect', async function () {
-    const password = await vscode.window.showInputBox({ placeHolder: "password", prompt: "Your server RCON password" });
+    const password = await vscode.window.showInputBox({ placeHolder: "password", password: true, prompt: "Your server RCON password" });
     if (password) {
       safeConnect(password);
     } else {
@@ -174,7 +174,7 @@ function activate(context) {
       return;
     }
     let [ip, port] = connectionDetails.split(":");
-    const password = await vscode.window.showInputBox({ placeHolder: "password", prompt: "Your server RCON password" });
+    const password = await vscode.window.showInputBox({ placeHolder: "password", password: true, prompt: "Your server RCON password" });
 
     if (password && ip && port) {
       safeConnect(password, ip, port);
