@@ -137,17 +137,16 @@ function activate(context) {
     connectToSaved();
   }
 
-  // Event: Save Text Document
+  // Event: Save Text Document 
+  // TODO: Only restart script if the saved file is in the current resource folder
   vscode.workspace.onDidSaveTextDocument((document) => {
     if (document.uri.scheme === "file" && rconConnection) {
-      if (currentFolder) {
-        rconConnection.send(`refresh ${currentFolder}`);
 
-        rconConnection.send(`ensure ${currentFolder}`);
+      if (currentFolder) {
+        rconConnection.send(`refresh; ensure ${currentFolder}`);
       } else {
         vscode.workspace.workspaceFolders.forEach((folder) => {
-          rconConnection.send(`refresh ${folder.name}`);
-          rconConnection.send(`ensure ${folder.name}`);
+          rconConnection.send(`refresh; ensure ${folder.name}`);
         });
       }
     }
