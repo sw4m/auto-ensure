@@ -6,6 +6,9 @@ let rconConnection;
 let currentFolder;
 let vscodeWorkspaceState;
 let statusBarConnectionItem;
+let reloadTimeout = 0;
+
+let infoPrefix = "[FiveM DevBridge] ";
 
 
 function showErrorMessage(message) {
@@ -143,10 +146,15 @@ function activate(context) {
     if (document.uri.scheme === "file" && rconConnection) {
 
       if (currentFolder) {
-        rconConnection.send(`refresh; ensure ${currentFolder}`);
+        setTimeout(() => {
+          rconConnection.send(`refresh; ensure ${currentFolder}`);
+        }, reloadTimeout);
+
       } else {
         vscode.workspace.workspaceFolders.forEach((folder) => {
-          rconConnection.send(`refresh; ensure ${folder.name}`);
+          setTimeout(() => {
+            rconConnection.send(`refresh; ensure ${folder.name}`);
+          }, reloadTimeout);
         });
       }
     }
@@ -191,6 +199,17 @@ function activate(context) {
   // Command: Toggle Connection
   let toggleConnectionCommand = vscode.commands.registerCommand('fivem-devbridge.toggleConnection', toggleConnection);
 
+  // Command: Set Reload Timeout
+  let setReloadCommand = vscode.commands.registerCommand("fivem-devbridge.setReloadTimeout", async function() {
+    let timeout = await vscode.window.showInputBox({placeHolder: "2000", prompt: "Sleep time in MS"});
+    if (!timeout) {
+      showErrorMessage("Aborting set Timeout.");
+      return;
+    }
+
+    reloadTimeout = timeout;
+  });
+
   // Subscriptions
   context.subscriptions.push(
     connectCommand,
@@ -198,7 +217,8 @@ function activate(context) {
     disconnectCommand,
     customConnectCommand,
     connectSavedCommand,
-    setCurrentResourceCommand
+    setCurrentResourceCommand,
+    setReloadCommand
   );
 }
 

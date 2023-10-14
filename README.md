@@ -18,6 +18,7 @@
    - **Auto Connect**: Use the `fivem connect` command to automatically connect to a localhost server on port 30120. You'll be prompted for the RCON password.
    - **Custom Connect**: Use the `fivem custom connect` command to connect to a custom IP and port. You'll be prompted for the IP, port, and RCON password.
    - **Disconnect**: Use the `fivem disconnect` command to disconnect from any previously connected server.
+   - **Set reload delay**: Set a delay for the reload to give a file watcher some time to build your Resource before reloading it.
 
 ## Additional Resources
 
