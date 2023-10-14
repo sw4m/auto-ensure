@@ -18,7 +18,8 @@
     "onCommand:fivem-devbridge.disconnect",
     "onCommand:fivem-devbridge.customConnect",
     "onCommand:fivem-devbridge.safeConnect",
-    "onCommand:fivem-devbridge.connectSaved"
+    "onCommand:fivem-devbridge.connectSaved",
+    "onCommand:fivem-devbridge.setReloadTimeout"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -59,6 +60,10 @@
       {
         "command": "fivem-devbridge.setCurrentResource",
         "title": "Set as Current Resource (DevBridge)"
+      },
+      {
+        "command": "fivem-devbridge.setReloadTimeout",
+        "title": "Set reload delay"
       }
     ],
     "menus": {
@@ -80,6 +85,8 @@
     "@types/mocha": "^9.1.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.71.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "@typescript-eslint/parser": "^6.7.5",
     "@vscode/test-electron": "^2.1.5",
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
