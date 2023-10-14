@@ -201,7 +201,7 @@ function activate(context) {
 
   // Command: Set Reload Timeout
   let setReloadCommand = vscode.commands.registerCommand("fivem-devbridge.setReloadTimeout", async function() {
-    let timeout = await vscode.window.showInputBox({placeHolder: "2000", prompt: "Sleep time in MS"});
+    let timeout = await vscode.window.showInputBox({placeHolder: `current: ${reloadTimeout}`, prompt: "Sleep time in MS"});
     if (!timeout) {
       showErrorMessage("Aborting set Timeout.");
       return;
