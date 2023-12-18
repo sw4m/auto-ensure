@@ -1,6 +1,6 @@
 # FiveM DevBridge README
 
-[FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=DuckWichTrust.easy-fivem&ssr=false#review-details) is a powerful extension for Visual Studio Code that streamlines the development process for FiveM resources. With the ability to ensure all opened folders as resources via RCON, FiveM DevBridge offers a seamless bridge between your code and your FiveM server.
+[FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=ZerX.fivem-devbridge) is a powerful extension for Visual Studio Code that streamlines the development process for FiveM resources. With the ability to ensure all opened folders as resources via RCON, FiveM DevBridge offers a seamless bridge between your code and your FiveM server.
 
 ## Features
 
