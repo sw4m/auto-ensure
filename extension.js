@@ -2,229 +2,283 @@ const vscode = require("vscode");
 const Rcon = require("rcon");
 const path = require("path");
 
+const MODE = vscode.workspace.getConfiguration("auto-ensure").get("mode");
+
 let rconConnection;
-let currentFolder;
 let vscodeWorkspaceState;
 let statusBarConnectionItem;
 let reloadTimeout = 0;
 
-let infoPrefix = "[FiveM DevBridge] ";
+let infoPrefix = "[FiveM Auto Ensure] ";
 
-
+// Helper functions for showing VSCode messages
 function showErrorMessage(message) {
-  vscode.window.showErrorMessage("[FiveM DevBridge] " + message);
+  vscode.window.showErrorMessage(infoPrefix + message);
 }
 
 function showInfoMessage(message) {
-  vscode.window.showInformationMessage("[FiveM DevBridge] " + message);
+  vscode.window.showInformationMessage(infoPrefix + message);
 }
 
-function disconnectFromServer() {
-  if (rconConnection) {
-    rconConnection.disconnect();
-    rconConnection = null;
-    vscode.window.showWarningMessage("Disconnected");
-    setConnectionStatus(false);
+function getCurrentWorkspaceFolderName() {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (workspaceFolders && workspaceFolders.length > 0) {
+    // Get the first workspace folder
+    const currentFolder = workspaceFolders[0];
+    return currentFolder.name; // Returns the name of the folder
+  } else {
+    vscode.window.showErrorMessage("No workspace folder is open.");
+    return null;
   }
 }
 
-function handleRconEvents() {
-  rconConnection
-    .on("auth", () => {
-      console.log("Authenticated");
-    })
-    .on("response", (str) => {
-      if (str.includes("Couldn't find resource")) {
-        showErrorMessage("Couldn't find resource");
-      }
+function setupStatusBarItem(context) {
+  statusBarConnectionItem = vscode.window.createStatusBarItem(
+    "auto-ensure",
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+  statusBarConnectionItem.text = "Auto Ensure Connected";
+  statusBarConnectionItem.tooltip =
+    "Auto ensuring resources. Click to disconnect.";
+  statusBarConnectionItem.command = "auto-ensure.disconnect";
 
-      if (str === "rint Invalid password") {
-        showErrorMessage("Invalid password");
-      }
-      if (str.includes("rint ^2Scanning resources.^7")) {
-        showInfoMessage("Connected");
-      }
+  // Add the status bar item to the context subscriptions
+  context.subscriptions.push(statusBarConnectionItem);
+}
+
+function addConnectionHistory(globalState, connectionHistory, { ip, password }) {
+  if (connectionHistory.length > 5) {
+    connectionHistory.splice(0, connectionHistory.length - 5);
+    globalState.update("connectionHistory", connectionHistory, true);
+  }
+  globalState.update("connectionHistory", [
+    ...connectionHistory,
+    { label: `${ip}`, ip, password },
+  ]);
+}
+
+function addConnection(configConnectionsPointer, configConnections) {
+  vscode.window
+    .showInputBox({
+      placeHolder: "IP:Port",
+      prompt: "Enter server IP and Port",
     })
-    .on("error", (err) => {
-      showErrorMessage(`Error: ${err}`);
-    })
-    .on("end", () => {
-      showErrorMessage("Connection closed");
-      process.exit();
+    .then((ip) => {
+      if (ip) {
+        if (ip.split(":").length !== 2) {
+          showErrorMessage("Invalid IP format! Use 'IP:Port' format.");
+          return;
+        }
+
+        vscode.window
+          .showInputBox({
+            placeHolder: "password",
+            password: true,
+            prompt: "Enter your server RCON password",
+          })
+          .then((password) => {
+            if (password && ip) {
+              const newConnection = {
+                label: ip,
+                password,
+                ip,
+              };
+              configConnectionsPointer.update(
+                "connectionList",
+                [...configConnections, newConnection],
+                true
+              );
+              showInfoMessage(`Added connection: ${ip}`);
+            } else {
+              showErrorMessage("Incomplete connection details provided!");
+            }
+          });
+      } else {
+        console.error(ip);
+        showErrorMessage("No connection details provided!");
+      }
     });
-}
-
-function connectToServer(password, ip = "127.0.0.1", port = "30120") {
-  disconnectFromServer();
-  rconConnection = new Rcon(ip, port, password, { tcp: false, challenge: false });
-  handleRconEvents();
-  rconConnection.connect();
-  setConnectionStatus(true);
-}
-
-function safeConnect(password, ip, port) {
-  if (rconConnection) {
-    vscode.window.showWarningMessage("Already connected. Disconnect first.");
-    return;
-  }
-  connectToServer(password, ip, port);
-
-  vscodeWorkspaceState.update("fivem-devbridge-connection", { password, ip, port });
-}
-
-function connectToSaved() {
-  const savedConnection = vscodeWorkspaceState.get("fivem-devbridge-connection");
-  if (!savedConnection) {
-    showErrorMessage("No saved connection found. Please connect manually.");
-    vscode.commands.executeCommand('fivem-devbridge.connect');
-    return;
-  }
-  safeConnect(savedConnection.password, savedConnection.ip, savedConnection.port);
-}
-
-function setCurrentResource(folder) {
-  if (!folder || !folder.fsPath) {
-    showErrorMessage("Invalid resource folder selected!");
-    return;
-  }
-  const folderName = path.basename(folder.fsPath);
-  if (rconConnection) {
-    currentFolder = folderName;
-    showInfoMessage(`Set ${folderName} as the current resource.`);
-  } else {
-    showErrorMessage("Please connect to a server first.");
-  }
-}
-
-function toggleConnection() {
-  if (rconConnection) {
-    disconnectFromServer();
-
-  } else {
-    connectToSaved();
-
-  }
-}
-
-function setConnectionStatus(status) {
-  if (status) {
-    statusBarConnectionItem.text = '$(custom-icon) Disconnect';
-    statusBarConnectionItem.tooltip = 'Click to disconnect';
-  } else {
-    statusBarConnectionItem.text = '$(custom-icon) Connect';
-    statusBarConnectionItem.tooltip = 'Click to connect';
-  }
 }
 
 
 function activate(context) {
-  // Check for saved connection at startup
+  const globalState = context.globalState;
+
   const workspaceState = context.workspaceState;
   vscodeWorkspaceState = workspaceState;
 
-  statusBarConnectionItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarConnectionItem.text = '$(custom-icon) Connect';
-  statusBarConnectionItem.tooltip = 'Click to connect';
-  statusBarConnectionItem.command = 'fivem-devbridge.toggleConnection';
-  statusBarConnectionItem.show();
+  setupStatusBarItem(context);
 
-  // Add the status bar item to the context subscriptions
-  context.subscriptions.push(statusBarConnectionItem);
-
-  // Retrieve the saved connection from the workspaceState
-  const savedConnection = workspaceState.get("fivem-devbridge-connection", null);
-
-
-  if (savedConnection) {
-    showInfoMessage(`Found saved connection: ${savedConnection.ip}:${savedConnection.port}`);
-    connectToSaved();
-  }
-
-  // Event: Save Text Document 
-  // TODO: Only restart script if the saved file is in the current resource folder
+  // Event: Save Text Document
   vscode.workspace.onDidSaveTextDocument((document) => {
     if (document.uri.scheme === "file" && rconConnection) {
+      const currentFolder = getCurrentWorkspaceFolderName();
 
-      if (currentFolder) {
-        setTimeout(() => {
-          rconConnection.send(`refresh; ensure ${currentFolder}`);
-        }, reloadTimeout);
-
-      } else {
-        vscode.workspace.workspaceFolders.forEach((folder) => {
-          setTimeout(() => {
-            rconConnection.send(`refresh; ensure ${folder.name}`);
-          }, reloadTimeout);
-        });
-      }
+      setTimeout(() => {
+        rconConnection.send(`refresh; ensure ${currentFolder}`);
+      }, reloadTimeout);
     }
   });
 
-  // Command: Connect
-  let connectCommand = vscode.commands.registerCommand('fivem-devbridge.connect', async function () {
-    const password = await vscode.window.showInputBox({ placeHolder: "password", password: true, prompt: "Your server RCON password" });
-    if (password) {
-      safeConnect(password);
-    } else {
-      showErrorMessage("No valid password provided!");
+  let connectCommand = vscode.commands.registerCommand(
+    "auto-ensure.openList",
+    async function () {
+      const configConnectionsPointer =
+        vscode.workspace.getConfiguration("auto-ensure");
+
+      const configConnections =
+        configConnectionsPointer.get("connectionList")  || [];
+
+      configConnections.forEach((connection) => {
+        connection.label = connection.ip;
+        connection.description = "Config";
+      });
+
+      const connectionHistory = globalState.get("connectionHistory") || [];
+
+      // Remove duplicates from connectionHistory
+      const uniqueHistory = connectionHistory.reduce((acc, connection) => {
+        if (!acc.some((item) => item.ip === connection.ip)) {
+          acc.push(connection);
+        }
+        return acc;
+      }, []);
+
+      uniqueHistory.forEach((connection) => {
+        connection.label = connection.ip;
+        connection.description = "History";
+      });
+
+      const quickPick = vscode.window.createQuickPick();
+
+      quickPick.items = [
+        ...configConnections,
+        ...uniqueHistory,
+        {
+          label: "Add Connection",
+          description: "Add a new connection",
+          ip: "ano ano",
+        },
+      ];
+
+      quickPick.placeholder = "Select a connection";
+      quickPick.onDidChangeSelection((selection) => {
+        const selectedItem = selection[0];
+        try {
+          if (selectedItem) {
+            if (selectedItem.label === "Add Connection") {
+              addConnection(
+                configConnectionsPointer,
+                configConnections,
+                uniqueHistory
+              );
+            } else {
+              connectConsole(selectedItem);
+              addConnectionHistory(globalState, uniqueHistory, selectedItem);
+              showInfoMessage(`Connected to ${selectedItem.label}`);
+            }
+          }
+          quickPick.hide();
+        } catch (error) {
+          console.error("Error in Quick Pick selection handler:", error);
+        }
+      });
+      quickPick.show();
     }
-  });
+  );
 
   // Command: Disconnect
-  let disconnectCommand = vscode.commands.registerCommand('fivem-devbridge.disconnect', disconnectFromServer);
-
-  // Command: Custom Connect
-  let customConnectCommand = vscode.commands.registerCommand('fivem-devbridge.customConnect', async function () {
-    let connectionDetails = await vscode.window.showInputBox({ placeHolder: "ip:port", prompt: "Your server IP and port" });
-    if (!connectionDetails) {
-      showErrorMessage("No connection details provided!");
-      return;
-    }
-    let [ip, port] = connectionDetails.split(":");
-    const password = await vscode.window.showInputBox({ placeHolder: "password", password: true, prompt: "Your server RCON password" });
-
-    if (password && ip && port) {
-      safeConnect(password, ip, port);
-    } else {
-      showErrorMessage("Incomplete connection details provided!");
-    }
-  });
-
-  // Command: Connect to Saved
-  let connectSavedCommand = vscode.commands.registerCommand('fivem-devbridge.connectSaved', connectToSaved);
-
-  // Command: Set Current Resource
-  let setCurrentResourceCommand = vscode.commands.registerCommand('fivem-devbridge.setCurrentResource', setCurrentResource);
-
-  // Command: Toggle Connection
-  let toggleConnectionCommand = vscode.commands.registerCommand('fivem-devbridge.toggleConnection', toggleConnection);
-
-  // Command: Set Reload Timeout
-  let setReloadCommand = vscode.commands.registerCommand("fivem-devbridge.setReloadTimeout", async function() {
-    let timeout = await vscode.window.showInputBox({placeHolder: `current: ${reloadTimeout}`, prompt: "Sleep time in MS"});
-    if (!timeout) {
-      showErrorMessage("Aborting set Timeout.");
-      return;
-    }
-
-    reloadTimeout = timeout;
-  });
-
-  // Subscriptions
-  context.subscriptions.push(
-    connectCommand,
-    toggleConnectionCommand,
-    disconnectCommand,
-    customConnectCommand,
-    connectSavedCommand,
-    setCurrentResourceCommand,
-    setReloadCommand
+  let disconnectCommand = vscode.commands.registerCommand(
+    "auto-ensure.disconnect",
+    disconnectConsole
   );
+
+  function disconnectConsole() {
+    if (rconConnection) {
+      rconConnection.disconnect();
+      rconConnection = null;
+      vscode.window.showWarningMessage("Disconnected");
+      setConnectionStatus(false);
+    }
+  }
+
+  function handleRconEvents() {
+    rconConnection
+      .on("auth", () => {
+        showInfoMessage("Authenticated");
+      })
+      .on("response", (str) => {
+        if (str.includes("Couldn't find resource")) {
+          showErrorMessage("Couldn't find resource");
+        } else if (str === "Invalid password") {
+          showErrorMessage("Invalid password");
+        } else {
+          showInfoMessage(str);
+        }
+      })
+      .on("error", (err) => {
+        showErrorMessage(`Error: ${err}`);
+      })
+      .on("end", () => {
+        showErrorMessage("Connection closed");
+      });
+  }
+
+  function connectConsole({ ip, password }) {
+    if (rconConnection) {
+      vscode.window.showWarningMessage(
+        "Disconnecting before connecting to a new server..."
+      );
+      disconnectConsole();
+      return;
+    }
+
+    [ip, port] = ip.split(":");
+
+    rconConnection = new Rcon(ip, port, password, {
+      tcp: false,
+      challenge: false,
+    });
+
+    handleRconEvents();
+    rconConnection.connect();
+    setConnectionStatus(true);
+
+    vscodeWorkspaceState.update("auto-ensure-connection", {
+      password,
+      ip,
+    });
+  }
+
+  function setCurrentResource(folder) {
+    if (!folder || !folder.fsPath) {
+      showErrorMessage("Invalid resource folder selected!");
+      return;
+    }
+    const folderName = path.basename(folder.fsPath);
+    if (rconConnection) {
+      currentFolder = folderName;
+      showInfoMessage(`Set ${folderName} as the current resource.`);
+    } else {
+      showErrorMessage("Please connect to a server first.");
+    }
+  }
+
+  function setConnectionStatus(status) {
+    if (status) {
+      statusBarConnectionItem.show();
+    } else {
+      statusBarConnectionItem.hide();
+    }
+  }
+  // Subscriptions
+  context.subscriptions.push(connectCommand, disconnectCommand);
 }
 
-function deactivate() { }
+function deactivate() {}
 
 module.exports = {
   activate,
-  deactivate
+  deactivate,
 };

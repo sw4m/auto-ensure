@@ -1,10 +1,10 @@
 {
-  "name": "fivem-devbridge",
-  "displayName": "FiveM DevBridge",
-  "description": "ensure resource when you save any change",
-  "publisher": "ZerX",
-  "repository": "https://github.com/ZerXGIT/fivem-devbridge",
-  "version": "0.0.15",
+  "name": "auto-ensure",
+  "displayName": "FiveM Auto Ensure",
+  "description": "Automatically ensures resources you're working on when saving a file. ",
+  "publisher": "sw4m",
+  "repository": "https://github.com/sw4m/auto-ensure",
+  "version": "0.0.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.71.0"
@@ -13,86 +13,53 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:fivem-devbridge.connect",
-    "onCommand:fivem-devbridge.disconnect",
-    "onCommand:fivem-devbridge.customConnect",
-    "onCommand:fivem-devbridge.safeConnect",
-    "onCommand:fivem-devbridge.connectSaved",
-    "onCommand:fivem-devbridge.setReloadTimeout"
+    "onStartupFinished"
   ],
   "main": "./extension.js",
   "contributes": {
-    "icons": {
-      "custom-icon": {
-        "description": "custom descr",
-        "default": {
-          "fontPath": "./iconItemBar.woff",
-          "fontCharacter": "\\41"
+    "configuration": {
+      "title": "[FiveM Auto Ensure] Settings",
+      "type": "object",
+      "properties": {
+        "auto-ensure.connectionList": {
+          "type": "array",
+          "default": [],
+          "description": "Connection List"
+        },
+        "auto-ensure.mode": {
+          "type": "enum",
+          "enum": [
+            "workspaceEnsure",
+            "selectedEnsure",
+            "recursiveEnsure"
+          ],
+          "enumDescriptions": [
+            "Ensures the resource that is open",
+            "Ensures only the selected folders",
+            "Ensures all resources in the workspace"
+          ],
+          "default": "workspaceEnsure",
+          "description": "Select the mode of ensuring resources"
         }
       }
     },
     "commands": [
       {
-        "command": "fivem-devbridge.toggleConnection",
-        "title": "Toggle Connection"
+        "command": "auto-ensure.openList",
+        "title": "[FiveM Auto Ensure] Connect"
       },
       {
-        "command": "fivem-devbridge.connect",
-        "title": "fivem connect"
+        "command": "auto-ensure.disconnect",
+        "title": "[FiveM Auto Ensure] Disconnect"
       },
       {
-        "command": "fivem-devbridge.disconnect",
-        "title": "fivem disconnect"
-      },
-      {
-        "command": "fivem-devbridge.customConnect",
-        "title": "fivem custom-connect"
-      },
-      {
-        "command": "fivem-devbridge.safeConnect",
-        "title": "Safe Connect to FiveM"
-      },
-      {
-        "command": "fivem-devbridge.connectSaved",
-        "title": "Connect to Saved Connection"
-      },
-      {
-        "command": "fivem-devbridge.setCurrentResource",
-        "title": "Set as Current Resource (DevBridge)"
-      },
-      {
-        "command": "fivem-devbridge.setReloadTimeout",
-        "title": "Set reload delay"
+        "command": "auto-ensure.openConfig",
+        "title": "[FiveM Auto Ensure] Open Config File"
       }
-    ],
-    "menus": {
-      "explorer/context": [
-        {
-          "command": "fivem-devbridge.setCurrentResource",
-          "when": "explorerResourceIsFolder"
-        }
-      ]
-    }
+    ]
   },
-  "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "node ./test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/glob": "^7.2.0",
-    "@types/mocha": "^9.1.1",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.71.0",
-    "@typescript-eslint/eslint-plugin": "^6.7.5",
-    "@typescript-eslint/parser": "^6.7.5",
-    "@vscode/test-electron": "^2.1.5",
-    "eslint": "^8.20.0",
-    "glob": "^8.0.3",
-    "mocha": "^10.0.0",
-    "typescript": "^4.7.4"
-  },
+  "scripts": {},
+  "type": "commonjs",
   "dependencies": {
     "rcon": "^1.1.0"
   }
