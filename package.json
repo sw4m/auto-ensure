@@ -4,7 +4,7 @@
   "description": "Automatically ensures resources you're working on when saving a file. ",
   "publisher": "sw4m",
   "repository": "https://github.com/sw4m/auto-ensure",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.71.0"
