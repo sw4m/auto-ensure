@@ -17,15 +17,16 @@
   ],
   "main": "./extension.js",
   "contributes": {
-    "explorer/context": [
-      {
-        "when": "config.auto-ensure.mode == 'selectedEnsure' && resourceScheme == 'file' ",
-        "command": "auto-ensure.selectFolder",
-        "title": "[FiveM Auto Ensure] Select Folder",
-        "group": "5_auto-ensure"
-      }
-    ],
-
+    "menus": {
+      "explorer/context": [
+        {
+            "when": "config.auto-ensure.mode == 'selectedEnsure' && resourceUri.scheme == 'file' && resourceUri.fsPath =~ /\\\\|\\//",
+          "command": "auto-ensure.selectFolder",
+          "title": "[FiveM Auto Ensure] Select Folder",
+          "group": "5_auto-ensure"
+        }
+      ]
+    },
     "configuration": {
       "title": "[FiveM Auto Ensure] Settings",
       "type": "object",
@@ -36,16 +37,16 @@
           "description": "Connection List"
         },
         "auto-ensure.mode": {
-          "type": "enum",
+          "type": "string",
           "enum": [
             "workspaceEnsure",
             "selectedEnsure",
             "recursiveEnsure"
           ],
-          "enumDescriptions": [
-            "Ensures the resource that is open",
-            "Ensures only the selected folders",
-            "Ensures all resources in the workspace"
+          "enumItemLabels": [
+            "Ensure the resource that is open",
+            "Ensure only the selected folders",
+            "Ensure all resources in the workspace"
           ],
           "default": "workspaceEnsure",
           "description": "Select the mode of ensuring resources"
@@ -73,6 +74,11 @@
             {
         "command": "auto-ensure.refresh",
         "title": "[FiveM Auto Ensure] Send 'refresh'"
+      },
+      {
+        "command": "auto-ensure.selectFolder",
+        "title": "[FiveM Auto Ensure] Select Folder",
+        "when": "false"
       }
     ]
   },

@@ -11,8 +11,9 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.5.0]
 
 ## Added
-- Config values
-- history
+- Option to stop refreshing on every save
+- 2 other saving modes
+
 
 ## [1.0.0]
 

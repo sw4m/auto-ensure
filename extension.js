@@ -19,7 +19,6 @@ let selectedFolders = []; // For selected folders whne using selectedEnsure
 // Helper functions
 //////////////////////////////////////////////////////////////////
 
-//TODO: Hide notifications after 5 seconds
 function ShowErrorMessage(message) {
   const notification = vscode.window.showErrorMessage(MESSAGE_PREFIX + message);
 }
@@ -78,6 +77,8 @@ function SetStatusBar(status) {
 //////////////////////////////////////////////////////////////////
 
 async function CheckConnection() {
+  // The Rcon library does not have a built-in method to check the connection
+  // So we send a command and wait for a response
   if (!RconConnection) {
     return false;
   }
@@ -85,12 +86,19 @@ async function CheckConnection() {
   ReceivedResponse = false;
 
   RconConnection.send("refresh");
-  return await setTimeout(() => {
-    RconConnection.disconnect();
-    RconConnection = null;
+  return await new Promise((resolve) => {
+    ShowInfoMessage("Checking connection...");
+    setTimeout(() => {
+      if (!ReceivedResponse) {
+        RconConnection.disconnect();
+        RconConnection = null;
 
-    return true;
-  }, 5000);
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    }, 5000);
+  });
 }
 
 async function ConnectConsole({ ip, password }) {
@@ -108,14 +116,13 @@ async function ConnectConsole({ ip, password }) {
 
   RconConnection.connect();
 
-  // Check the connection
   if (!(await CheckConnection())) {
     ShowErrorMessage("Connection failed");
     return;
   }
 
   ShowInfoMessage("Connected to server");
-  ShowStatusBar(true);
+  SetStatusBar(true);
 }
 
 function DisconnectConsole() {
@@ -271,19 +278,17 @@ function GetConfigConnections() {
 
 function CaptureRconEvents() {
   RconConnection.on("response", (str) => {
-    ReceivedResponse = true;
-    if (str.includes("Couldn't find resource")) {
-      ShowErrorMessage("Couldn't find resource");
-    } else if (str.includes("Invalid password")) {
-      isDisconnecting
-        ? DisconnectConsole()
-        : ShowErrorMessage("Invalid password");
-    } else {
-      if (str.startsWith("rint")) {
-        str = str.slice(4);
-      }
-      ShowInfoMessage(str);
+    if (!ReceivedResponse) {
+      ReceivedResponse = true;
+      //Do not show notification when checking connection
+      return;
     }
+    if (str.startsWith("rint")) {
+      str = str.slice(4);
+    }
+
+    ShowInfoMessage(str);
+
   })
     .on("error", (err) => {
       ReceivedResponse = true;
@@ -301,7 +306,6 @@ function CaptureRconEvents() {
 function CaptureSaveEvents() {
   vscode.workspace.onDidSaveTextDocument((document) => {
     const refresh = CONFIG.get("autoRefresh");
-
     if (document.uri.scheme === "file" && RconConnection) {
       switch (MODE) {
         case "workspaceEnsure":
