@@ -7,11 +7,13 @@ const MODE = vscode.workspace.getConfiguration("auto-ensure").get("mode");
 const CONFIG = vscode.workspace.getConfiguration("auto-ensure");
 const RELOAD_TIMEOUT = CONFIG.get("reloadTimeout") || 0;
 
+// Ik using global variables is bad but WHAT ARE YOU GONNA DO ABOUT IT
+//TODO: refactor to use get functions instead of global variables - maybe use OOP
 let GlobalState; // Global state to store connection history
 let RconConnection; // RCON connection object
 let StatusBarConnectionItem; // Status bar item for connection status
-let doesConnectionExist = false; // Flag to check if connection exists
-let isDisconnecting = false; // Flag to check if disconnecting
+let ReceivedResponse; // For checking connection since capturing has it's own function
+let selectedFolders = []; // For selected folders whne using selectedEnsure
 
 //////////////////////////////////////////////////////////////////
 // Helper functions
@@ -20,11 +22,12 @@ let isDisconnecting = false; // Flag to check if disconnecting
 //TODO: Hide notifications after 5 seconds
 function ShowErrorMessage(message) {
   const notification = vscode.window.showErrorMessage(MESSAGE_PREFIX + message);
-
 }
 
 function ShowInfoMessage(message) {
-  const notification = vscode.window.showInformationMessage(MESSAGE_PREFIX + message);
+  const notification = vscode.window.showInformationMessage(
+    MESSAGE_PREFIX + message
+  );
 }
 
 // Splitting the IP and port from string
@@ -44,7 +47,6 @@ function GetCurrentWorkspaceFolderName() {
   // Get the first workspace folder
   const currentFolder = workspaceFolders[0];
   return currentFolder.name; // Returns the name of the folder
-
 }
 
 //////////////////////////////////////////////////////////////////
@@ -60,8 +62,8 @@ function SetupStatusBarItem(context) {
   );
   StatusBarConnectionItem.text = "Auto Ensure Connected";
   StatusBarConnectionItem.tooltip =
-    "Auto ensuring resources. Click to disconnect.";
-  StatusBarConnectionItem.command = "auto-ensure.disconnect";
+    "Auto ensuring resources. Click to send 'refresh'.";
+  StatusBarConnectionItem.command = "auto-ensure.refresh";
 
   // Add the status bar item to the context subscriptions
   context.subscriptions.push(StatusBarConnectionItem);
@@ -71,19 +73,32 @@ function SetStatusBar(status) {
   status ? StatusBarConnectionItem.show() : StatusBarConnectionItem.hide();
 }
 
-
 //////////////////////////////////////////////////////////////////
 // Console connection functions
 //////////////////////////////////////////////////////////////////
 
-function ConnectConsole({ ip, password }) {
+async function CheckConnection() {
+  if (!RconConnection) {
+    return false;
+  }
+
+  ReceivedResponse = false;
+
+  RconConnection.send("refresh");
+  return await setTimeout(() => {
+    RconConnection.disconnect();
+    RconConnection = null;
+
+    return true;
+  }, 5000);
+}
+
+async function ConnectConsole({ ip, password }) {
   if (RconConnection) {
     DisconnectConsole();
-    return;
   }
 
   [ip, port] = ip.split(":");
-
   RconConnection = new Rcon(ip, port, password, {
     tcp: false,
     challenge: false,
@@ -94,35 +109,23 @@ function ConnectConsole({ ip, password }) {
   RconConnection.connect();
 
   // Check the connection
-  RconConnection.send("refresh");
+  if (!(await CheckConnection())) {
+    ShowErrorMessage("Connection failed");
+    return;
+  }
 
-  setTimeout(() => {
-    if (!isDisconnecting) {
-      if (doesConnectionExist) {
-        ShowInfoMessage("Connected to server");
-        ShowStatusBar(true);
-      } else {
-        ShowErrorMessage("Connection failed");
-        RconConnection.disconnect();
-        RconConnection = null;
-      }
-    }
-  }, 5000);
-
-  RconConnection.send("refresh");
-  SetStatusBar(true);
+  ShowInfoMessage("Connected to server");
+  ShowStatusBar(true);
 }
 
 function DisconnectConsole() {
   if (RconConnection) {
-    isDisconnecting = true;
     RconConnection.disconnect();
     RconConnection = null;
     vscode.window.showWarningMessage("Disconnected");
     SetStatusBar(false);
   }
 }
-
 
 //////////////////////////////////////////////////////////////////
 // Input functions
@@ -195,9 +198,10 @@ function OpenConnectionsList() {
       }
       quickPick.hide();
     } catch (error) {
-      console.error("Error in Quick Pick selection handler:", error);
+      ShowErrorMessage("Error: " + error);
     }
   });
+
   quickPick.show();
 }
 
@@ -208,7 +212,6 @@ function OpenConnectionsList() {
 // History
 
 function AddHistoryConnection(connectionHistory, { ip, password }) {
-
   if (connectionHistory.length > 5) {
     connectionHistory.splice(0, connectionHistory.length - 5);
     GlobalState.update("connectionHistory", connectionHistory, true);
@@ -267,41 +270,110 @@ function GetConfigConnections() {
 //////////////////////////////////////////////////////////////////
 
 function CaptureRconEvents() {
-  RconConnection
-    .on("response", (str) => {
-      doesConnectionExist = true;
-      if (str.includes("Couldn't find resource")) {
-        ShowErrorMessage("Couldn't find resource");
-      } else if (str.includes("Invalid password")) {
-        isDisconnecting ? DisconnectConsole() : ShowErrorMessage("Invalid password");
-      } else {
-        if (str.startsWith("rint")) {
-          str = str.slice(4);
-        }
-        ShowInfoMessage(str);
+  RconConnection.on("response", (str) => {
+    ReceivedResponse = true;
+    if (str.includes("Couldn't find resource")) {
+      ShowErrorMessage("Couldn't find resource");
+    } else if (str.includes("Invalid password")) {
+      isDisconnecting
+        ? DisconnectConsole()
+        : ShowErrorMessage("Invalid password");
+    } else {
+      if (str.startsWith("rint")) {
+        str = str.slice(4);
       }
-    })
+      ShowInfoMessage(str);
+    }
+  })
     .on("error", (err) => {
+      ReceivedResponse = true;
       isDisconnecting ? DisconnectConsole() : ShowErrorMessage("Error: " + err);
-
     })
     .on("end", () => {
-      isDisconnecting ? DisconnectConsole() : ShowErrorMessage("Connection closed")
+      ReceivedResponse = true;
+      isDisconnecting
+        ? DisconnectConsole()
+        : ShowErrorMessage("Connection closed");
     });
 }
 
+
 function CaptureSaveEvents() {
   vscode.workspace.onDidSaveTextDocument((document) => {
+    const refresh = CONFIG.get("autoRefresh");
+
     if (document.uri.scheme === "file" && RconConnection) {
-      const currentFolder = GetCurrentWorkspaceFolderName();
-      if (currentFolder) {
-        setTimeout(() => {
-          RconConnection.send(`refresh; ensure ${currentFolder}`);
-        }, RELOAD_TIMEOUT);
+      switch (MODE) {
+        case "workspaceEnsure":
+          ensureWorkspace(refresh);
+        case "selectedEnsure":
+        case "recursiveEnsure":
       }
     }
   });
 }
+
+
+//////////////////////////////////////////////////////////////////
+// Functions for different modes
+//////////////////////////////////////////////////////////////////
+
+function ensureResources(refresh, resources) {
+  setTimeout(() => {
+    resource.forEach((key) => {
+      RconConnection.send(`${refresh && "refresh;"} ensure ${key}`);
+    });
+  }, RELOAD_TIMEOUT);
+}
+
+//! TODO: Add right click menu for selectedEnsure
+
+function ensureWorkspace(refresh) {
+  const currentFolder = GetCurrentWorkspaceFolderName();
+
+  if (!currentFolder) {
+    ShowErrorMessage("No workspace folder is open.");
+    return;
+  }
+
+  ensureResources(refresh, [currentFolder]);
+
+}
+
+function ensureSelected(refresh) {
+  if (selectedFolders.length === 0) {
+    ShowErrorMessage("No folders selected");
+    return;
+  }
+
+  ensureResources(refresh, selectedFolders);
+}
+
+function ensureRecursive(refresh) {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+
+  if (!workspaceFolders || !workspaceFolders.length > 0) {
+    ShowErrorMessage("No workspace folder is open.");
+    return;
+  }
+
+  const currentFolder = workspaceFolders[0];
+
+  // This is Claude generated code since/I am lazy
+  const folders = vscode.workspace.findFiles(
+    new vscode.RelativePattern(currentFolder, "**/{fxmanifest.lua,__resource.lua}")
+  ).then((files) => {
+    // Get unique parent folder names containing fxmanifest.lua or __resource.lua
+    const resourceFolders = [
+      ...new Set(files.map((file) => path.basename(path.dirname(file.fsPath))))
+    ];
+    return resourceFolders;
+  });
+
+  ensureResources(refresh, folders);
+}
+
+
 
 //////////////////////////////////////////////////////////////////
 // MAIN FUNCTION
@@ -313,31 +385,59 @@ function activate(context) {
   SetupStatusBarItem(context);
   CaptureSaveEvents();
 
-  const OpenListCommand = vscode.commands.registerCommand(
+  const openListCommand = vscode.commands.registerCommand(
     "auto-ensure.openList",
     OpenConnectionsList
   );
 
-  const DisconnectCommand = vscode.commands.registerCommand(
+  const disconnectCommand = vscode.commands.registerCommand(
     "auto-ensure.disconnect",
     DisconnectConsole
   );
 
-  const OpenConfigCommand = vscode.commands.registerCommand(
+  const openConfigCommand = vscode.commands.registerCommand(
     "auto-ensure.openConfig",
-    () =>{
-      vscode.commands.executeCommand('workbench.action.openSettings', '@ext:sw4m.auto-ensure');
+    () => {
+      vscode.commands.executeCommand(
+        "workbench.action.openSettings",
+        "@ext:sw4m.auto-ensure"
+      );
     }
-);
+  );
+
+  const refreshCommand = vscode.commands.registerCommand(
+    "auto-ensure.refresh",
+    () => {
+      if (RconConnection) {
+        RconConnection.send("refresh");
+      } else {
+        ShowErrorMessage("No connection established.");
+      }
+    }
+  );
+
+  const selectFolderCommand = vscode.commands.registerCommand(
+    "auto-ensure.selecteFolder",
+    (selectedFolder) => {
+      console.log(selectedFolder);
+    }
+  );
 
   // Subscriptions
-  context.subscriptions.push(OpenListCommand, DisconnectCommand, OpenConfigCommand);
+  context.subscriptions.push(
+    openListCommand,
+    disconnectCommand,
+    openConfigCommand,
+    refreshCommand,
+    selectFolderCommand
+  );
 }
 
 function deactivate() {
   if (RconConnection) {
-    RconConnection.disconnect();
+    DisconnectConsole();
   }
+
   if (StatusBarConnectionItem) {
     StatusBarConnectionItem.dispose();
   }

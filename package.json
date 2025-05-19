@@ -17,6 +17,15 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "explorer/context": [
+      {
+        "when": "config.auto-ensure.mode == 'selectedEnsure' && resourceScheme == 'file' ",
+        "command": "auto-ensure.selectFolder",
+        "title": "[FiveM Auto Ensure] Select Folder",
+        "group": "5_auto-ensure"
+      }
+    ],
+
     "configuration": {
       "title": "[FiveM Auto Ensure] Settings",
       "type": "object",
@@ -40,6 +49,11 @@
           ],
           "default": "workspaceEnsure",
           "description": "Select the mode of ensuring resources"
+        },
+        "auto-ensure.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically send 'refresh' when saving a file"
         }
       }
     },
@@ -55,6 +69,10 @@
       {
         "command": "auto-ensure.openConfig",
         "title": "[FiveM Auto Ensure] Open Config File"
+      },
+            {
+        "command": "auto-ensure.refresh",
+        "title": "[FiveM Auto Ensure] Send 'refresh'"
       }
     ]
   },
