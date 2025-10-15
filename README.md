@@ -1,6 +1,9 @@
 # VScode FiveM Auto Ensure
 
-[FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=ZerX.fivem-devbridge) is a Fork of [FiveM DevBridge](https://github.com/ZerXGIT/fivem-devbridge), extension that enables ensuring resources you are working on.
+Auto-ensure is a fork of [FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=ZerX.fivem-devbridge) that is a Fork of [FiveM DevBridge](https://github.com/ZerXGIT/fivem-devbridge) :D.
+
+It's a VSCode extension that enables instant reload and ensuring of a resource, when saving it's files. It is not heavily maintained, but I do/will add more interesting things over time, since I use it when working on FiveM.
+Give it a try.
 
 ## Features
 
@@ -34,3 +37,6 @@
 
 ### Save Delay
 - Delay after saving for resources that need to be built first
+
+## Current TO-DOs
+[ ] - Adding a nicer notification
