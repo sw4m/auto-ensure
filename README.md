@@ -1,5 +1,3 @@
-IN DEVELOPMENT, NOT SAFE TO USE
-
 # VScode FiveM Auto Ensure
 
 [FiveM DevBridge](https://marketplace.visualstudio.com/items?itemName=ZerX.fivem-devbridge) is a Fork of [FiveM DevBridge](https://github.com/ZerXGIT/fivem-devbridge), extension that enables ensuring resources you are working on.
